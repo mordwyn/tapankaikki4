@@ -24,15 +24,15 @@ SDL, SDL_image, SDL_mixer, SDL_net, libgtk (for Editor to work on Linux and Mac)
 Build instructions for Linux and Mac
 ------------------------------------
 
-    cmake .
-    make
-    make install
+    cmake -B Release -S .
+    cmake --build Release --config Release -j $(nproc)
+    cmake --install Release
 
-The `make install` command will install the game data files and executables
+The `cmake --install` command will install the game data files and executables
 under your install prefix (`/usr/local` by default). You can customize the
 install prefix with the following CMake invocation:
 
-    cmake -DCMAKE_INSTALL_PREFIX=/path/to/install/to .
+    cmake --install Release --prefix /path/to/install/to
 
 After all this you should be ready for the game: run `tk4`.
 

@@ -199,17 +199,15 @@ void CLevel::GenerateShadows()
 	}
 }
 
-void CLevel::Load(const char* aName) 
+void CLevel::Load(const char* aName)
 {
 	ASSERT(aName);
 	ASSERT(strlen(aName)>0);
 	FILE *dat;
-	dat=fopen(getdatapath(std::string(aName)).c_str(), "rb");
+	dat=fopen(aName, "rb");
 	if (dat != NULL) 
 	{
 		Reset();
-
-		strcpy(iLevelFileName,aName);
 
 		try
 		{

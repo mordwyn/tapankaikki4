@@ -681,7 +681,7 @@ void CGraphicsBuffer::SaveBMP(const std::string& aFilename,const CPalette* aPale
 SDL_Surface* CGraphicsBuffer::CopyToSurface(const CPalette* aPalette) const
 {
 	ASSERT(aPalette);
-	SDL_Surface* surface=SDL_CreateRGBSurfaceFrom(iBuf,iWidth,iHeight,8,iWidth,8,8,8,8);
+	SDL_Surface* surface=SDL_CreateRGBSurfaceFrom(iBuf,iWidth,iHeight,8,iWidth,0,0,0,0);
 
 	if (surface==NULL) 
 		return NULL;

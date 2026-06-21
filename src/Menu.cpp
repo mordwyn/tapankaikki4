@@ -125,7 +125,7 @@ CGameMenuAudioOptions::CGameMenuAudioOptions(CGameMenuContainer* aGMC): CGameMen
 	iMenuItems.push_back(new CGameMenuItemExit(this,"previous menu"));
 }
 
-TMenuKeyActions CGameMenuAudioOptions::HandleKeyPress(SDL_keysym aKey,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuAudioOptions::HandleKeyPress(SDL_Keysym aKey,CGameGraphicsInterface* aGGI)
 {
 	COptions* options=iGMC->Options();
 
@@ -257,7 +257,7 @@ TGameMenuState CGameMenuEpisodeSelect::PrevMenu()
 }
 
 
-TMenuKeyActions CGameMenuEpisodeSelect::HandleKeyPress(SDL_keysym aKey,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuEpisodeSelect::HandleKeyPress(SDL_Keysym aKey,CGameGraphicsInterface* aGGI)
 {
 	CKeys& pl1keys = iGMC->Options()->Data().iKeys[ 0 ];
 	TMenuKeyActions ret;

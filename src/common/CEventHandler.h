@@ -21,21 +21,21 @@ public:
 	EXPORT ~CEventHandler();
 
 	EXPORT static char* KeyToStr(int key);
-	//EXPORT SDL_keysym CheckGetch();
-    EXPORT SDL_keysym Getch();
+	//EXPORT SDL_Keysym CheckGetch();
+    EXPORT SDL_Keysym Getch();
 	EXPORT int Kbhit();
 	EXPORT char volatile& State(int index);
 	EXPORT void ResetStack();
 	EXPORT CMouse& GetMouse();
 	EXPORT int HandleEvents();
-	EXPORT void PushKey(SDL_keysym key);
+	EXPORT void PushKey(SDL_Keysym key);
 	EXPORT void AddEventHandler(IEventInterface* aHandler);
 	EXPORT void RemoveAllEventHandlers();
 	EXPORT void GrabInputs(bool aGrab);
 
 private:
 
-	SDL_keysym iStack[KStackLength];
+	SDL_Keysym iStack[KStackLength];
 	unsigned short iStackHead,iStackEnd;
 	char iState[KKeyTableLength];
 	CGraphicsDevice* iGD;

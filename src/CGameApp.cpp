@@ -333,10 +333,12 @@ void CGameApp::Run(int argc,char *argv[])
 		if((tmp[0]=='-')||(tmp[0]=='/'))
 		switch(tmp[1]) 
 		{
-			case '1': extra |= SDL_HWACCEL;
+			// Legacy SDL1 surface-type hints; no longer meaningful with the SDL2
+			// renderer, kept for command-line compatibility as no-ops.
+			case '1':
 					break;
 
-			case '2': extra |= SDL_HWSURFACE;
+			case '2':
 					break;
 
 			case 'W':iOptions->Data().iFullScreen=0; 

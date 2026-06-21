@@ -8,13 +8,9 @@
 
 char* CEventHandler::KeyToStr(int key)
 {
-	char *ptr;
 	ASSERT(key>=SDLK_UNKNOWN);
-	ASSERT(key<SDLK_LAST);
 
-	ptr=SDL_GetKeyName(SDLKey(key));
-
-   	return ptr;
+	return (char*)SDL_GetKeyName(SDL_Keycode(key));
 }
 
 CMouse& CEventHandler::GetMouse()
@@ -22,7 +18,7 @@ CMouse& CEventHandler::GetMouse()
 	return *iMouse;
 }
 
-//SDL_keysym CEventHandler::CheckGetch()
+//SDL_Keysym CEventHandler::CheckGetch()
 //{
 //	int tmpEnd;
 //
@@ -31,7 +27,7 @@ CMouse& CEventHandler::GetMouse()
 //	return iStack[tmpEnd];
 //}
 
-SDL_keysym CEventHandler::Getch()
+SDL_Keysym CEventHandler::Getch()
 {
 	ASSERT( iStackHead!=iStackEnd );
 
@@ -58,16 +54,15 @@ CEventHandler::CEventHandler(CGraphicsDevice* aGD)
 		iState[a]=0;
     iStackHead=0;
     iStackEnd=iStackHead;
-	SDL_EnableKeyRepeat(250, 30);
-	SDL_EnableUNICODE(1);
 }
 
 void CEventHandler::GrabInputs(bool aGrab)
 {
-	if (aGrab)
-		SDL_WM_GrabInput(SDL_GRAB_ON);
-	else
-		SDL_WM_GrabInput(SDL_GRAB_OFF);
+	if (iGD->Window())
+	{
+		SDL_SetWindowGrab(iGD->Window(), aGrab?SDL_TRUE:SDL_FALSE);
+		SDL_SetRelativeMouseMode(aGrab?SDL_TRUE:SDL_FALSE);
+	}
 }
 
 CEventHandler::~CEventHandler()
@@ -81,7 +76,7 @@ void CEventHandler::ResetStack()
         iStackEnd=iStackHead;
 }
 
-void CEventHandler::PushKey(SDL_keysym aKSYM)
+void CEventHandler::PushKey(SDL_Keysym aKSYM)
 {
         iStackHead++;
         if (iStackHead==iStackEnd) {iStackHead--;return;}
@@ -113,19 +108,17 @@ int CEventHandler::HandleEvents()
 				/* Keyboard event */
 				case SDL_KEYDOWN:
 
-					// Check the boundary of table
-					if (event.key.keysym.sym<KKeyTableLength)
-						State(event.key.keysym.sym)=1;
+					State(event.key.keysym.sym)=1;
 
 					PushKey(event.key.keysym);
 					break;
 
 				case SDL_KEYUP:
-					State(event.key.keysym.sym)=0;                        
+					State(event.key.keysym.sym)=0;
 					break;
 
 				case SDL_MOUSEMOTION:
-					if (SDL_GetAppState()&SDL_APPINPUTFOCUS)
+					if (SDL_GetKeyboardFocus()!=NULL)
 					{
 						iMouse->SetXPos(event.motion.x);
 						iMouse->SetYPos(event.motion.y);
@@ -134,8 +127,15 @@ int CEventHandler::HandleEvents()
 					}
 					break;
 
+				case SDL_MOUSEWHEEL:
+					if (event.wheel.y>0)
+						iMouse->IncButton(CMouse::EButtonWheelUp);
+					else if (event.wheel.y<0)
+						iMouse->IncButton(CMouse::EButtonWheelDown);
+					break;
+
 				case SDL_MOUSEBUTTONDOWN:
-					if (SDL_GetAppState()&SDL_APPINPUTFOCUS)
+					if (SDL_GetKeyboardFocus()!=NULL)
 					{
 						switch (event.button.button)
 						{
@@ -147,12 +147,6 @@ int CEventHandler::HandleEvents()
 								break;
 							case SDL_BUTTON_RIGHT:
 								iMouse->IncButton(CMouse::EButtonRight);
-								break;
-							case SDL_BUTTON_WHEELUP:
-								iMouse->IncButton(CMouse::EButtonWheelUp);
-								break;
-							case SDL_BUTTON_WHEELDOWN:
-								iMouse->IncButton(CMouse::EButtonWheelDown);
 								break;
 						};
 					}
@@ -186,9 +180,12 @@ int CEventHandler::HandleEvents()
 	return 0;
 };
 
-char volatile& CEventHandler::State(int index)
+char volatile& CEventHandler::State(int key)
 {
-	return iState[index];
+	SDL_Scancode sc = SDL_GetScancodeFromKey((SDL_Keycode)key);
+	if (sc<0 || sc>=KKeyTableLength)
+		sc = SDL_SCANCODE_UNKNOWN;
+	return iState[sc];
 }
 
 void CEventHandler::AddEventHandler(IEventInterface* aHandler)

@@ -27,7 +27,7 @@ void CStateEditGeneralData::HandleKeys(CEventHandler* aEventHandler,CEditorDrawe
 
 	if (! aEventHandler->Kbhit()) return;
 	
-	SDL_keysym key = aEventHandler->Getch();
+	SDL_Keysym key = aEventHandler->Getch();
 	int curKey = key.sym;
 
 	aEventHandler->ResetStack();
@@ -73,7 +73,9 @@ void CStateEditGeneralData::HandleKeys(CEventHandler* aEventHandler,CEditorDrawe
 			curKey!=SDLK_ESCAPE && 
 			curKey!=SDLK_BACKSPACE) 
 		{
-			int  unic = key.unicode;
+			// SDL2 keysyms carry no unicode field; printable ASCII keycodes
+			// (letters, digits, space, punctuation) equal their character value.
+			int  unic = (curKey > 0 && curKey < 128) ? curKey : 0;
 
 			if (len < KCommentMaxLength-1 && unic < 255 && unic > 0)
 			{

@@ -24,7 +24,7 @@ CGameMenuItemStartMenu::CGameMenuItemStartMenu(CGameMenuBase* aParent, const cha
 {
 }
 
-TMenuKeyActions CGameMenuItemStartMenu::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu, CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemStartMenu::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu, CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key ))
 	{
@@ -44,7 +44,7 @@ CGameMenuItemExit::CGameMenuItemExit(CGameMenuBase* aParent,const char *aStr): C
 }
 
 
-TMenuKeyActions CGameMenuItemExit::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemExit::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key ))
 		return EMenuKeyExit;
@@ -61,7 +61,7 @@ CGameMenuItemResetOptions::CGameMenuItemResetOptions(CGameMenuBase* aParent,cons
 {
 }
 
-TMenuKeyActions CGameMenuItemResetOptions::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemResetOptions::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key ))
 	{
@@ -84,7 +84,7 @@ CGameMenuItemExecSingleGame::CGameMenuItemExecSingleGame(CGameMenuBase* aParent,
 }
 
 
-TMenuKeyActions CGameMenuItemExecSingleGame::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemExecSingleGame::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key ))
 	{
@@ -119,7 +119,7 @@ CGameMenuItemExecMultiplay::CGameMenuItemExecMultiplay(CGameMenuBase* aParent,co
 }
 
 
-TMenuKeyActions CGameMenuItemExecMultiplay::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemExecMultiplay::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key ))
 	{
@@ -186,7 +186,7 @@ void CGameMenuItemNetworkModeSelect::UpdateText()
 	free(tmp);
 }
 
-TMenuKeyActions CGameMenuItemNetworkModeSelect::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemNetworkModeSelect::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (AnyKey( key ))
 	{
@@ -268,7 +268,7 @@ void CGameMenuItemGameModeSelect::UpdateLevelSelect()
 
 }
 
-TMenuKeyActions CGameMenuItemGameModeSelect::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemGameModeSelect::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	CGameData* gm = iParent->Container()->StateController()->GameData();
 	COptions* opt = iParent->Container()->Options();
@@ -358,7 +358,7 @@ void CGameMenuItemSplitSelect::UpdateText()
 	free(tmp);
 }
 
-TMenuKeyActions CGameMenuItemSplitSelect::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemSplitSelect::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 
 	if (ActionKey(key) || RightKey( key))
@@ -415,7 +415,7 @@ void CGameMenuItemBoolean::UpdateText()
 	free(tmp);
 }
 
-TMenuKeyActions CGameMenuItemBoolean::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemBoolean::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 
 	if (AnyKey( key ))
@@ -440,7 +440,7 @@ CGameMenuItemFullScreen::CGameMenuItemFullScreen(CGameMenuBase* aParent,const ch
 {
 }
 
-TMenuKeyActions CGameMenuItemFullScreen::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemFullScreen::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	bool booli=*iBool;
 	TMenuKeyActions retval;
@@ -464,7 +464,7 @@ CGameMenuItemResolution::CGameMenuItemResolution(CGameMenuBase* aParent, const c
 	UpdateText();
 }
 
-TMenuKeyActions CGameMenuItemResolution::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemResolution::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	COptions* opt = iParent->Container()->Options();
 
@@ -501,7 +501,7 @@ CGameMenuItemLargeText::CGameMenuItemLargeText(CGameMenuBase* aParent, const cha
 {
 }
 
-TMenuKeyActions CGameMenuItemLargeText::HandleKeyPress(SDL_keysym key, CGameMenuBase* aMenu, CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemLargeText::HandleKeyPress(SDL_Keysym key, CGameMenuBase* aMenu, CGameGraphicsInterface* aGGI)
 {
 	TMenuKeyActions retval = CGameMenuItemBoolean::HandleKeyPress(key, aMenu, aGGI);
 	aGGI->UpdateLargeTextMode();
@@ -526,7 +526,7 @@ CGameMenuItemString::~CGameMenuItemString()
 	iParamStr=NULL; // We don't want to free this....
 }
 
-TMenuKeyActions CGameMenuItemString::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemString::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (!iInputMode)
 	{
@@ -556,12 +556,25 @@ TMenuKeyActions CGameMenuItemString::HandleKeyPress(SDL_keysym key,CGameMenuBase
 
 		if (strlen(iParamStr)<iMaxLen)
 		{
-			if (key.unicode==0)
+			// SDL2 dropped SDL_Keysym::unicode; for printable keys the keycode
+			// equals the ASCII value, so derive the character and apply shift/caps.
+			char ch=0;
+			if (key.sym>=32 && key.sym<127)
+				ch=(char)key.sym;
+
+			if (ch==0)
 				return EMenuKeyNotProcessed;
+
+			if (ch>='a' && ch<='z')
+			{
+				bool upper=((key.mod&KMOD_SHIFT)!=0)^((key.mod&KMOD_CAPS)!=0);
+				if (upper)
+					ch=ch-'a'+'A';
+			}
 
 			int end=(int)strlen(iParamStr);
 			iParamStr[end+1]=0;
-			iParamStr[end]=(char)key.unicode;
+			iParamStr[end]=ch;
 			return EMenuKeyProcessed;
 		}
 	}
@@ -622,7 +635,7 @@ void CGameMenuItemPercent::UpdateText()
 	SetText(tmp);
 }
 
-TMenuKeyActions CGameMenuItemPercent::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemPercent::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (LeftKey( key ))
 	{
@@ -662,7 +675,7 @@ CGameMenuItemChangeKey::CGameMenuItemChangeKey(CGameMenuBase* aParent,CKeys* kpt
 	iKeyInputMode=0;
 }
 
-TMenuKeyActions CGameMenuItemChangeKey::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemChangeKey::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (!iKeyInputMode)
 	{
@@ -739,7 +752,7 @@ CGameMenuItemMouseMode::CGameMenuItemMouseMode(CGameMenuBase* aParent, const cha
 {
 }
 
-TMenuKeyActions CGameMenuItemMouseMode::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemMouseMode::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (ActionKey( key )||RightKey( key ))
 	{
@@ -819,7 +832,7 @@ void CGameMenuItemMusicTheme::UpdateText()
 	opt->UpdateAudioChanges();
 }
 
-TMenuKeyActions CGameMenuItemMusicTheme::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemMusicTheme::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (LeftKey(key))
 	{
@@ -874,7 +887,7 @@ CGameMenuItemLevelSelect::CGameMenuItemLevelSelect(CGameMenuBase* aParent, const
 	UpdateText();
 }
 
-TMenuKeyActions CGameMenuItemLevelSelect::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemLevelSelect::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (LeftKey(key))
 	{
@@ -965,7 +978,7 @@ CGameMenuItemEpisodeSelect::CGameMenuItemEpisodeSelect(CGameMenuBase* aParent, c
 	UpdateText();
 }
 
-TMenuKeyActions CGameMenuItemEpisodeSelect::HandleKeyPress(SDL_keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
+TMenuKeyActions CGameMenuItemEpisodeSelect::HandleKeyPress(SDL_Keysym key,CGameMenuBase* aMenu,CGameGraphicsInterface* aGGI)
 {
 	if (LeftKey(key))
 	{

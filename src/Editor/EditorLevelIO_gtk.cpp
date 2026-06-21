@@ -11,17 +11,51 @@
 #include <string>
 
 namespace {
-	std::string tmp_filename;
-	GtkWidget* file_widget;
-	void file_callback(GtkWidget* w, GtkFileSelection* fs)
+	std::string choose_file(const char* title, GtkFileChooserAction action, const char* pattern = NULL)
 	{
-		tmp_filename = gtk_file_selection_get_filename(fs);
-		gtk_widget_destroy(file_widget);
-	}
+		std::string result;
+		GtkWidget* dialog = gtk_file_chooser_dialog_new(title, NULL, action,
+			"_Cancel", GTK_RESPONSE_CANCEL,
+			(action == GTK_FILE_CHOOSER_ACTION_SAVE) ? "_Save" : "_Open", GTK_RESPONSE_ACCEPT,
+			NULL);
 
-	void end_widget(GtkWidget* w, gpointer data)
-	{
-		gtk_main_quit();
+		if (pattern)
+		{
+			GtkFileFilter* filter = gtk_file_filter_new();
+			gtk_file_filter_set_name(filter, pattern);
+			gtk_file_filter_add_pattern(filter, pattern);
+			gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+			GtkFileFilter* all = gtk_file_filter_new();
+			gtk_file_filter_set_name(all, "All files");
+			gtk_file_filter_add_pattern(all, "*");
+			gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), all);
+		}
+
+		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), DATADIR);
+		gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
+
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT)
+		{
+			char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+			g_print("filename: %s\n", filename);
+			if (filename)
+			{
+				result = filename;
+				g_free(filename);
+			}
+		}
+
+		gtk_widget_destroy(dialog);
+
+		// gtk_widget_destroy() only queues the teardown; pump the GTK main loop
+		// until it is done so the dialog window (and its input grab) actually go
+		// away. Otherwise control returns to the SDL editor while the dead
+		// dialog still holds the grab, making the editor window appear frozen.
+		while (gtk_events_pending())
+			gtk_main_iteration();
+
+		return result;
 	}
 };
 
@@ -42,19 +76,7 @@ CEditorLevelIO::~CEditorLevelIO(void)
 
 bool CEditorLevelIO::LoadINI()
 {
-	tmp_filename.clear();
-	file_widget = gtk_file_selection_new("Select INI-file");
-	g_signal_connect(G_OBJECT(file_widget), "destroy", G_CALLBACK(gtk_main_quit), 0);
-	g_signal_connect(G_OBJECT(GTK_FILE_SELECTION(file_widget)->ok_button), "clicked", G_CALLBACK(file_callback), (gpointer)file_widget);
-	g_signal_connect_swapped(G_OBJECT(GTK_FILE_SELECTION(file_widget)->cancel_button), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(file_widget));
-	gtk_widget_show(file_widget);
-
-	// ensure the dialog will not end up behind the editor window
-	gdk_window_set_keep_above(file_widget->window, 1);
-	gdk_window_raise(file_widget->window);
-	gdk_window_show(file_widget->window);
-
-	gtk_main();
+	std::string tmp_filename = choose_file("Select INI-file", GTK_FILE_CHOOSER_ACTION_OPEN, "*.ini");
 
 	if (!tmp_filename.empty())
 	{
@@ -81,19 +103,7 @@ bool CEditorLevelIO::LoadINI()
 
 bool CEditorLevelIO::LoadLevel()
 {
-	tmp_filename.clear();
-	file_widget = gtk_file_selection_new("Load level:");
-	g_signal_connect(G_OBJECT(file_widget), "destroy", G_CALLBACK(gtk_main_quit), 0);
-	g_signal_connect(G_OBJECT(GTK_FILE_SELECTION(file_widget)->ok_button), "clicked", G_CALLBACK(file_callback), (gpointer)file_widget);
-	g_signal_connect_swapped(G_OBJECT(GTK_FILE_SELECTION(file_widget)->cancel_button), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(file_widget));
-	gtk_widget_show(file_widget);
-
-	// ensure the dialog will not end up behind the editor window
-	gdk_window_set_keep_above(file_widget->window, 1);
-	gdk_window_raise(file_widget->window);
-	gdk_window_show(file_widget->window);
-
-	gtk_main();
+	std::string tmp_filename = choose_file("Load level:", GTK_FILE_CHOOSER_ACTION_OPEN, "*.lev");
 
 	if (!tmp_filename.empty())
 	{
@@ -122,19 +132,7 @@ bool CEditorLevelIO::LoadLevel()
 
 bool CEditorLevelIO::SaveLevelAs()
 {
-	tmp_filename.clear();
-	file_widget = gtk_file_selection_new("Save level as:");
-	g_signal_connect(G_OBJECT(file_widget), "destroy", G_CALLBACK(gtk_main_quit), 0);
-	g_signal_connect(G_OBJECT(GTK_FILE_SELECTION(file_widget)->ok_button), "clicked", G_CALLBACK(file_callback), (gpointer)file_widget);
-	g_signal_connect_swapped(G_OBJECT(GTK_FILE_SELECTION(file_widget)->cancel_button), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(file_widget));
-	gtk_widget_show(file_widget);
-
-	// ensure the dialog will not end up behind the editor window
-	gdk_window_set_keep_above(file_widget->window, 1);
-	gdk_window_raise(file_widget->window);
-	gdk_window_show(file_widget->window);
-
-	gtk_main();
+	std::string tmp_filename = choose_file("Save level as:", GTK_FILE_CHOOSER_ACTION_SAVE, "*.lev");
 
 	if (!tmp_filename.empty())
 	{
@@ -177,24 +175,17 @@ bool CEditorLevelIO::SaveLevel()
 			error("Saving Failed (%s)!",iLevel->LevelFileName());
 		else
 		{
-			GtkWidget* window = gtk_dialog_new();
-			g_signal_connect (G_OBJECT (window), "destroy", G_CALLBACK (end_widget), NULL);
-			GtkWidget* text = gtk_label_new("Level saved !");
-			gtk_box_pack_start (GTK_BOX (GTK_DIALOG (window)->vbox), text, TRUE, TRUE, 0);
-			GtkWidget* button = gtk_button_new_with_label ("OK");
-			gtk_box_pack_start (GTK_BOX (GTK_DIALOG (window)->action_area), button, TRUE, TRUE, 0);
-			g_signal_connect_swapped (G_OBJECT (button), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(window));
-			gtk_widget_show(text);
-			gtk_widget_show(button);
-			gtk_widget_show(window);
-			gdk_window_set_title(window->window, "TK4 Editor");
+			GtkWidget* dialog = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL,
+				GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "Level saved !");
+			gtk_window_set_title(GTK_WINDOW(dialog), "TK4 Editor");
+			gtk_window_set_keep_above(GTK_WINDOW(dialog), TRUE);
+			gtk_dialog_run(GTK_DIALOG(dialog));
+			gtk_widget_destroy(dialog);
 
-			// ensure the box will not end up behind the editor window
-			gdk_window_set_keep_above(window->window, 1);
-			gdk_window_raise(window->window);
-			gdk_window_show(window->window);
-
-			gtk_main();
+			// Pump the GTK loop so the dialog is fully torn down before control
+			// returns to the SDL editor (see choose_file()).
+			while (gtk_events_pending())
+				gtk_main_iteration();
 		}
 
 		return false;

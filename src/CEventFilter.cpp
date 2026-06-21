@@ -15,14 +15,23 @@ bool CEventFilter::HandleEvent(SDL_Event event)
 	char text[256];
 
 	switch( event.type )
-		{	
-			case SDL_ACTIVEEVENT:
-				iGA->SetActive( event.active.gain!=0 );
-				return true;
-
-			case SDL_VIDEOEXPOSE:
-				iGA->SetFullScreenUpdate( true );
-				return true;
+		{
+			case SDL_WINDOWEVENT:
+				switch( event.window.event )
+				{
+					case SDL_WINDOWEVENT_FOCUS_GAINED:
+						iGA->SetActive( true );
+						return true;
+					case SDL_WINDOWEVENT_FOCUS_LOST:
+						iGA->SetActive( false );
+						return true;
+					case SDL_WINDOWEVENT_EXPOSED:
+					case SDL_WINDOWEVENT_RESIZED:
+					case SDL_WINDOWEVENT_SIZE_CHANGED:
+						iGA->SetFullScreenUpdate( true );
+						return true;
+				}
+				return false;
 
             case SDL_KEYDOWN:
 					switch (event.key.keysym.sym)

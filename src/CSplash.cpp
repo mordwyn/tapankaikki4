@@ -4,50 +4,50 @@
 
 void CSplash::ShowSplash(const char* aImagePath,const char* aIcon,const char* aCaption)
 {
-	SDL_Surface* screen;
-	SDL_Rect src, dest;
-
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) 
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0)
 	{
 		error("Unable to initialize SDL: %s \n", SDL_GetError());
 	}
 
 	SDL_Surface* bitmap = SDL_LoadBMP(getdatapath(std::string(aImagePath)).c_str());
-	if (bitmap  == NULL)
+	if (bitmap == NULL)
 	{
 		error("Unable to load splash.\n");
 	}
 
-
-	src.x = 0;
-	src.y = 0;
-	src.w = bitmap->w;
-	src.h = bitmap->h;
-	dest.x = 0;
-	dest.y = 0;
-	dest.w = bitmap->w;
-	dest.h = bitmap->h;
-
-
-	atexit(SDL_Quit);
-
-	// This must be done before videomode call...
-	if (aIcon!=NULL && exists(aIcon))
+	SDL_Window* window = SDL_CreateWindow(aCaption ? aCaption : "",
+	                                      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+	                                      bitmap->w, bitmap->h,
+	                                      SDL_WINDOW_BORDERLESS);
+	if (window == NULL)
 	{
-		SDL_Surface* icon=SDL_LoadBMP(aIcon);
-		SDL_WM_SetIcon(icon, NULL);
+		error("Unable to create splash window: %s\n", SDL_GetError());
 	}
-	SDL_WM_SetCaption(aCaption,NULL);
 
-	screen = SDL_SetVideoMode(bitmap->w, bitmap->h, 32, SDL_HWPALETTE|SDL_NOFRAME);
-	if (screen == NULL) 
+	if (aIcon != NULL && exists(aIcon))
 	{
-		error("Unable to set video mode: %s\n", SDL_GetError());
+		SDL_Surface* icon = SDL_LoadBMP(aIcon);
+		if (icon)
+		{
+			SDL_SetWindowIcon(window, icon);
+			SDL_FreeSurface(icon);
+		}
 	}
-	SDL_BlitSurface(bitmap, &src, screen, &dest);
-    SDL_UpdateRect(screen, 0, 0, 0, 0);
-	SDL_Flip(screen);
 
-	SDL_FreeSurface( bitmap );
+	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, bitmap);
+
+	SDL_RenderClear(renderer);
+	SDL_RenderCopy(renderer, texture, NULL, NULL);
+	SDL_RenderPresent(renderer);
+
+	// Keep the splash visible briefly; SDL2 uses a separate window per surface,
+	// so it is torn down before the game opens its own window.
+	SDL_PumpEvents();
+	SDL_Delay(1000);
+
+	SDL_DestroyTexture(texture);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_FreeSurface(bitmap);
 }
-

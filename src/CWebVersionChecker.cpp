@@ -22,14 +22,14 @@ void CWebVersionChecker::Kill()
 {
 	if (iThread)
 	{
-		SDL_KillThread(iThread);
+		SDL_DetachThread(iThread);
 		iThread=NULL;
 	}
 }
 
 void CWebVersionChecker::Start()
 {
-	iThread=SDL_CreateThread(WebVersionCheckerObserver,this);
+	iThread=SDL_CreateThread(WebVersionCheckerObserver,"webcheck",this);
 }
 
 void CWebVersionChecker::Run()

@@ -6,10 +6,9 @@ namespace
 	const CCoord<int> KDefaultResolution(640,480);
 };
 
-CGraphicsDevice::CGraphicsDevice(const char *aCaption, const char* aIcon): iWidth(0), iHeight(0), iBits(0), iBasicModes(0), iLocked(0), iDontLock(0), iSurfaceOK(0), iSDLsurface(0), iCursorMode(SDL_DISABLE)
+CGraphicsDevice::CGraphicsDevice(const char *aCaption, const char* aIcon): iWidth(0), iHeight(0), iBits(0), iBasicModes(0), iLocked(0), iDontLock(0), iSurfaceOK(0), iSDLsurface(0), iRGBSurface(0), iWindow(0), iRenderer(0), iTexture(0), iCursorMode(SDL_DISABLE)
 {
-	int a=0;
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO)<0) 
+	if (SDL_InitSubSystem(SDL_INIT_VIDEO)<0)
 	{
         error("CGraphicsDevice::Init: Unable to init SDL_INIT_VIDEO subsystem: %s\n", SDL_GetError());
     }
@@ -25,13 +24,6 @@ CGraphicsDevice::CGraphicsDevice(const char *aCaption, const char* aIcon): iWidt
 		iIconFile=NULL;
 
 	ListVideoModes();
-
-   /* Fetch the video info */
-    iVideoInfo = SDL_GetVideoInfo( );
-	if ( !iVideoInfo )
-	{
-	    error("Video query failed: %s\n",SDL_GetError( ) );
-	}
 }
 
 void CGraphicsDevice::SetCursorMode(int aMode)
@@ -45,6 +37,9 @@ CGraphicsDevice::~CGraphicsDevice()
 	std::vector<CCoord<int>*>::iterator iter;
 
 	Close();
+
+	if (iRenderer) { SDL_DestroyRenderer(iRenderer); iRenderer=NULL; }
+	if (iWindow)   { SDL_DestroyWindow(iWindow);     iWindow=NULL; }
 
 	free(iCaptionText);
 	free(iIconFile);
@@ -65,9 +60,8 @@ CGraphicsBuffer* CGraphicsDevice::NewBuf()
 
 bool CGraphicsDevice::FullScreen()
 {
-	bool booli;
-	booli=(iSDLsurface->flags&SDL_FULLSCREEN)==SDL_FULLSCREEN;
-	return booli;
+	if (!iWindow) return false;
+	return (SDL_GetWindowFlags(iWindow)&SDL_WINDOW_FULLSCREEN_DESKTOP)!=0;
 }
 
 int CGraphicsDevice::SurfaceOK()
@@ -103,7 +97,7 @@ int CGraphicsDevice::RefreshAll()
 	if (!Locked())
 	{
 		if (iSDLsurface!=NULL&&Width()!=0)
-			SDL_UpdateRect(iSDLsurface,0,0,0,0);
+			Present();
 	}
 	else retval=1;
 
@@ -168,13 +162,22 @@ int CGraphicsDevice::ShowBuf(const CGraphicsBuffer* aBuf, const CRect<int>& rect
 
 void CGraphicsDevice::Update()
 {
-	for (int a=0;a<iDirtyArea.Size();a++)
-	{
-		iRects[a] = iDirtyArea.Rect(a, Rect());
-	}
-
-	SDL_UpdateRects(iSDLsurface, iDirtyArea.Size(), iRects);
 	iDirtyArea.Reset();
+	Present();
+}
+
+// Convert the 8-bit paletted back-buffer to RGB and present it via the renderer.
+// SDL2 has no paletted display mode, so the whole frame is uploaded each time.
+void CGraphicsDevice::Present()
+{
+	if (!iRenderer||!iSDLsurface||!iRGBSurface||!iTexture)
+		return;
+
+	SDL_BlitSurface(iSDLsurface, NULL, iRGBSurface, NULL);
+	SDL_UpdateTexture(iTexture, NULL, iRGBSurface->pixels, iRGBSurface->pitch);
+	SDL_RenderClear(iRenderer);
+	SDL_RenderCopy(iRenderer, iTexture, NULL, NULL);
+	SDL_RenderPresent(iRenderer);
 }
 
 int CGraphicsDevice::Lock()
@@ -209,7 +212,7 @@ int CGraphicsDevice::Clear()
 	SDL_FillRect( iSDLsurface, NULL, 0 );
 
 	UnLock();
-    SDL_UpdateRect(iSDLsurface, 0, 0,0,0);
+	Present();
 	return 0;
 }
 
@@ -217,54 +220,85 @@ void CGraphicsDevice::Close()
 {
 	iSurfaceOK=0;
 	iLocked=1;
+
+	if (iTexture)    { SDL_DestroyTexture(iTexture);   iTexture=NULL; }
+	if (iRGBSurface) { SDL_FreeSurface(iRGBSurface);   iRGBSurface=NULL; }
+	if (iSDLsurface) { SDL_FreeSurface(iSDLsurface);   iSDLsurface=NULL; }
 }
 
 /* Return 0 if no error*/
-int CGraphicsDevice::SetMode(int aWidth,int aHeight,int aBits, bool aFullScreen, int aExtraFlags)
+int CGraphicsDevice::SetMode(int aWidth,int aHeight,int aBits, bool aFullScreen, int /*aExtraFlags*/)
 {
-	unsigned int mode=SDL_HWPALETTE|aExtraFlags;
-
 	Close(); // If we're already in graphics mode
 	while (iDontLock);
 
-	if ( aFullScreen && iFullScreenPossible )
+	// The game always renders into an 8-bit paletted buffer regardless of aBits.
+	iBits=aBits ? aBits : 8;
+
+	// Create the window (and renderer) on the first call; afterwards just resize.
+	if (!iWindow)
 	{
-		mode |= SDL_FULLSCREEN;
+		Uint32 wflags=SDL_WINDOW_RESIZABLE;
+		if (aFullScreen)
+			wflags|=SDL_WINDOW_FULLSCREEN_DESKTOP;
+
+		iWindow=SDL_CreateWindow(iCaptionText?iCaptionText:"",
+		                         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		                         aWidth, aHeight, wflags);
+		if (!iWindow)
+			error("CGraphicsDevice::SetMode: SDL_CreateWindow(%d,%d) failed: %s\n",aWidth,aHeight,SDL_GetError());
+
+		iRenderer=SDL_CreateRenderer(iWindow, -1, SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
+		if (!iRenderer)
+			iRenderer=SDL_CreateRenderer(iWindow, -1, 0);
+		if (!iRenderer)
+			error("CGraphicsDevice::SetMode: SDL_CreateRenderer failed: %s\n",SDL_GetError());
+
+		if (iIconFile!=NULL && exists(getdatapath(std::string(iIconFile)).c_str()))
+		{
+			SDL_Surface* icon=SDL_LoadBMP(getdatapath(std::string(iIconFile)).c_str());
+			if (icon)
+			{
+				SDL_SetWindowIcon(iWindow, icon);
+				SDL_FreeSurface(icon);
+			}
+		}
+	}
+	else
+	{
+		SDL_SetWindowFullscreen(iWindow, aFullScreen?SDL_WINDOW_FULLSCREEN_DESKTOP:0);
+		if (!aFullScreen)
+			SDL_SetWindowSize(iWindow, aWidth, aHeight);
 	}
 
-	mode |= SDL_SWSURFACE;
-
-	// This must be done before videomode call...
-	if (iIconFile!=NULL && exists(getdatapath(std::string(iIconFile)).c_str()))
-	{
-		SDL_Surface* icon=SDL_LoadBMP(getdatapath(std::string(iIconFile)).c_str());
-		SDL_WM_SetIcon(icon, NULL);
-	}
-
-    iSDLsurface=SDL_SetVideoMode(aWidth,aHeight, aBits,mode);
-	
+	// 8-bit paletted back-buffer the game draws into.
+	iSDLsurface=SDL_CreateRGBSurface(0, aWidth, aHeight, 8, 0,0,0,0);
 	if (iSDLsurface==NULL)
-        error("CGraphicsDevice::SetMode: SDL_SetVideoMode(%d,%d,%d,%x) failed: %s\n",aWidth,aHeight, aBits,mode, SDL_GetError());
+		error("CGraphicsDevice::SetMode: SDL_CreateRGBSurface(%d,%d,8) failed: %s\n",aWidth,aHeight,SDL_GetError());
 
-	// Make sure initialization worked out as supposed (if aBits is 0 then current screen mode is used)
-	ASSERT((aBits==0 && iSDLsurface->format->BitsPerPixel) ||
-	       iSDLsurface->format->BitsPerPixel==aBits);
-	ASSERT(iSDLsurface->w==aWidth);
-	ASSERT(iSDLsurface->h==aHeight);
+	// 32-bit conversion target + streaming texture for presentation.
+	iRGBSurface=SDL_CreateRGBSurface(0, aWidth, aHeight, 32,
+	                                 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+	iTexture=SDL_CreateTexture(iRenderer, SDL_PIXELFORMAT_ARGB8888,
+	                           SDL_TEXTUREACCESS_STREAMING, aWidth, aHeight);
+	if (iRGBSurface==NULL || iTexture==NULL)
+		error("CGraphicsDevice::SetMode: failed to create presentation surface/texture: %s\n",SDL_GetError());
+
+	// Scale the internal resolution to the window/screen.
+	SDL_RenderSetLogicalSize(iRenderer, aWidth, aHeight);
+
 	iWidth=aWidth;
 	iHeight=aHeight;
-	iBits=aBits;
 
 	SDL_ShowCursor(iCursorMode);
-	SDL_WM_SetCaption(iCaptionText,NULL);
+	SDL_SetWindowTitle(iWindow, iCaptionText?iCaptionText:"");
 
-	// Let user fuck up (if that's wanted :)
 	iSurfaceOK=1;
 	iLocked=0;
 
+	SDL_SetPaletteColors(iSDLsurface->format->palette, iPalette.ColorData(), 0, 256);
 	Clear();
-	SDL_SetPalette(iSDLsurface, SDL_LOGPAL|SDL_PHYSPAL, iPalette.ColorData(), 0, 256);
-	
+
 	return 0;
 }
 
@@ -283,7 +317,7 @@ int CGraphicsDevice::SetPalette(const CPalette& pal,int mul)
 		iPalette.Color(i).g=(pal.Color(i).g*mul)>>8;
 		iPalette.Color(i).b=(pal.Color(i).b*mul)>>8;
 	}
-	SDL_SetPalette(iSDLsurface, SDL_LOGPAL|SDL_PHYSPAL, iPalette.ColorData(), 0, 256);
+	SDL_SetPaletteColors(iSDLsurface->format->palette, iPalette.ColorData(), 0, 256);
 
 	return 0;
 }
@@ -294,46 +328,39 @@ void CGraphicsDevice::GetPalette(CPalette& pal)
 }
 
 void CGraphicsDevice::ListVideoModes()
-{	
+{
 	int i;
-	SDL_Rect **modes;
 
-	/* Get available fullscreen modes */
-	modes=SDL_ListModes(0, SDL_FULLSCREEN);
+	iFullScreenPossible = true;
 
-	/* Check if our resolution is unrestricted */
-	if(
-/* XXX what's the use of this, used to be in windows
-		modes == (SDL_Rect **)-1 || 
-*/
-		modes == (SDL_Rect **)0)
-	{   
-		iFullScreenPossible = false;
-	}
-	else
+	/* Get available display modes for the primary display */
+	int modeCount = SDL_GetNumDisplayModes(0);
+	for(i=0;i<modeCount;++i)
 	{
-		iFullScreenPossible = true;
+		SDL_DisplayMode mode;
+		if (SDL_GetDisplayMode(0, i, &mode)!=0)
+			continue;
 
-		for(i=0;modes[i];++i)
+		/* We're not interested of modes less than 320x200... are we? */
+		if (mode.w>=320&&mode.h>=200)
 		{
-			/* We're not interested of modes less than 320x200... are we? */
-			if (modes[i]->w>=320&&modes[i]->h>=200)
-			{
-				/* SDL_ListModes() returns often multiple modes with same resolution in linux, ignore those */
-				bool added = false;
-				for (std::vector<CCoord<int>*>::iterator a = iResolutions.begin(); a != iResolutions.end(); a++) {
-					if ( ((*a)->X() == modes[i]->w) && ((*a)->Y() == modes[i]->h) ) {
-						added = true;
-						break;
-					}
+			/* The list often contains multiple modes with same resolution, ignore those */
+			bool added = false;
+			for (std::vector<CCoord<int>*>::iterator a = iResolutions.begin(); a != iResolutions.end(); a++) {
+				if ( ((*a)->X() == mode.w) && ((*a)->Y() == mode.h) ) {
+					added = true;
+					break;
 				}
-				if (added) continue;
-
-				CCoord<int>* mode=new CCoord<int>(modes[i]->w,modes[i]->h);
-				iResolutions.push_back(mode);
 			}
+			if (added) continue;
+
+			CCoord<int>* res=new CCoord<int>(mode.w,mode.h);
+			iResolutions.push_back(res);
 		}
 	}
+
+	if (iResolutions.empty())
+		iFullScreenPossible = false;
 
 	std::vector<CCoord<int>*>::iterator outer;
 	std::vector<CCoord<int>*>::iterator inner;

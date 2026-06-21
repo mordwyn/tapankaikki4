@@ -44,10 +44,14 @@ public:
 
 	EXPORT int SurfaceOK();
 
+	EXPORT SDL_Window* Window(){ return iWindow; }
+
 private:
 
 	void CopyToSurface(const CGraphicsBuffer* aBuf, const CRect<int>& rect);
-	
+
+	void Present();
+
 	void ListVideoModes();
 
 	int Lock();
@@ -71,11 +75,14 @@ private:
 
 	CDrawArea iDirtyArea;
 	SDL_Rect iRects[KMaxRectsInDrawArea];
-    const SDL_VideoInfo *iVideoInfo;
- 
+
 	volatile int iLocked,iDontLock;
 	std::vector<CCoord<int>*> iResolutions;
-	SDL_Surface *iSDLsurface;
+	SDL_Surface *iSDLsurface;   // 8-bit paletted back-buffer the game draws into
+	SDL_Surface *iRGBSurface;   // 32-bit conversion target for presentation
+	SDL_Window *iWindow;
+	SDL_Renderer *iRenderer;
+	SDL_Texture *iTexture;
 	CPalette iPalette;
 };
 
