@@ -6,6 +6,9 @@
 
 #include "COptions.h"
 #include "MenuItems.h"
+#include "IGUIStateController.h"     // StateController()->GGI()
+#include "CGameGraphicsInterface.h"  // GGI()->GD()
+
 
 /***************************************************\
 *	Class CGameMenuMain								*
@@ -38,12 +41,10 @@ TGameMenuState CGameMenuMain::PrevMenu()
 
 void CGameMenuGameOptions::ValueUpdated( CGameMenuItem* aUpdatedItem )
 {
-#ifndef DISABLE_GAMMA
 	if ( aUpdatedItem == iGamma )
 	{
-		iGMC->Options()->UpdateGammaChanges();
+		iGMC->Options()->UpdateGammaChanges(iGMC->StateController()->GGI()->GD());
 	}
-#endif
 }
 
 CGameMenuGameOptions::CGameMenuGameOptions(CGameMenuContainer* aGMC): CGameMenuBase(aGMC)
@@ -55,9 +56,7 @@ CGameMenuGameOptions::CGameMenuGameOptions(CGameMenuContainer* aGMC): CGameMenuB
 	iMenuItems.push_back(new CGameMenuItemTitle(this,""));
 	iMenuItems.push_back(new CGameMenuItemMouseMode(this,"mouse controls: "));
 	iMenuItems.push_back(new CGameMenuItemPercent(this,"mouse sensitivity: ",&options->Data().iMouseSensitivity,KMouseSensitivityMin,KMouseSensitivityMax,KMouseSensitivityStep));
-#ifndef DISABLE_GAMMA 
 	iMenuItems.push_back(iGamma = new CGameMenuItemPercent(this, "gamma: ", &options->Data().iGamma, KMinGamma, KMaxGamma, KGammaStep));
-#endif
 
 	iMenuItems.push_back(new CGameMenuItemResolution(this,"game resolution: ",&options->Data().iInGameVideoMode ));
 	iMenuItems.push_back(new CGameMenuItemFullScreen(this,"fullscreen",&options->Data().iFullScreen));

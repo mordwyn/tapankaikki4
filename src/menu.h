@@ -30,9 +30,7 @@ public:
 	TGameMenuState PrevMenu();
 	void ValueUpdated( CGameMenuItem* aUpdatedItem );
 private:
-#ifndef DISABLE_GAMMA
 	CGameMenuItem* iGamma;
-#endif
 };
 
 /***************************************************\

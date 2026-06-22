@@ -6,6 +6,7 @@
 #include "COptions.h"
 
 #include "CSoundPlayer.h"
+#include "common/CGraphicsDevice.h"
 
 namespace
 {
@@ -142,8 +143,17 @@ void COptions::Load()
 	UpdateAudioChanges();
 }
 
-void COptions::UpdateGammaChanges()
+void COptions::UpdateGammaChanges(CGraphicsDevice *aGD)
 {
+	if ( !aGD )
+		return;
+
+	if (iData.iGamma < KMinGamma)
+		iData.iGamma = KMinGamma;
+	if (iData.iGamma > KMaxGamma)
+		iData.iGamma = KMaxGamma;
+
+	aGD->SetGamma( iData.iGamma );
 }
 
 void COptions::UpdateAudioChanges()

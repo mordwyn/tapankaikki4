@@ -18,6 +18,8 @@ public:
 	EXPORT int SetPalette(const CPalette& pal,int mul);
 	EXPORT void GetPalette(CPalette& pal);
 
+	EXPORT void SetGamma(float aGamma);
+
 	EXPORT int ShowBuf(const CGraphicsBuffer* aBuf, const CRect<int>& rect);
 	EXPORT int ShowBuf(const CGraphicsBuffer* aBuf, CDrawArea& aDrawArea);
 	EXPORT inline int ShowBuf(const CGraphicsBuffer* aBuf){return ShowBuf(aBuf,aBuf->Rect() );}
@@ -52,6 +54,8 @@ private:
 
 	void Present();
 
+	void SyncDisplayPalette();
+
 	void ListVideoModes();
 
 	int Lock();
@@ -83,7 +87,9 @@ private:
 	SDL_Window *iWindow;
 	SDL_Renderer *iRenderer;
 	SDL_Texture *iTexture;
-	CPalette iPalette;
+	CPalette iPalette;          // logical palette (post-fade, pre-gamma)
+	CPalette iDisplayPalette;   // gamma-applied palette actually shown by SDL
+	Uint8 iGammaRamp[256];      // gamma LUT, identity when iGamma==1
 };
 
 #endif

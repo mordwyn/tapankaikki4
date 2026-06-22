@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "CGraphicsDevice.h"
 #include "files.h"
 
@@ -8,6 +10,9 @@ namespace
 
 CGraphicsDevice::CGraphicsDevice(const char *aCaption, const char* aIcon): iWidth(0), iHeight(0), iBits(0), iBasicModes(0), iLocked(0), iDontLock(0), iSurfaceOK(0), iSDLsurface(0), iRGBSurface(0), iWindow(0), iRenderer(0), iTexture(0), iCursorMode(SDL_DISABLE)
 {
+	for (int i=0;i<sizeof(iGammaRamp);i++)
+		iGammaRamp[i]=(Uint8)i;
+
 	if (SDL_InitSubSystem(SDL_INIT_VIDEO)<0)
 	{
         error("CGraphicsDevice::Init: Unable to init SDL_INIT_VIDEO subsystem: %s\n", SDL_GetError());
@@ -114,7 +119,8 @@ void CGraphicsDevice::SaveShot(const char* aName)
 void CGraphicsDevice::CopyToSurface(const CGraphicsBuffer* aBuf, const CRect<int>& rect)
 {	
 	SDL_Rect r = rect;
-	SDL_Surface *surf = aBuf->CopyToSurface( &iPalette );
+
+	SDL_Surface *surf = aBuf->CopyToSurface( &iDisplayPalette );
 
 	SDL_BlitSurface( surf, &r, iSDLsurface, &r );
 
@@ -296,7 +302,7 @@ int CGraphicsDevice::SetMode(int aWidth,int aHeight,int aBits, bool aFullScreen,
 	iSurfaceOK=1;
 	iLocked=0;
 
-	SDL_SetPaletteColors(iSDLsurface->format->palette, iPalette.ColorData(), 0, 256);
+	SyncDisplayPalette();
 	Clear();
 
 	return 0;
@@ -317,7 +323,7 @@ int CGraphicsDevice::SetPalette(const CPalette& pal,int mul)
 		iPalette.Color(i).g=(pal.Color(i).g*mul)>>8;
 		iPalette.Color(i).b=(pal.Color(i).b*mul)>>8;
 	}
-	SDL_SetPaletteColors(iSDLsurface->format->palette, iPalette.ColorData(), 0, 256);
+	SyncDisplayPalette();
 
 	return 0;
 }
@@ -325,6 +331,38 @@ int CGraphicsDevice::SetPalette(const CPalette& pal,int mul)
 void CGraphicsDevice::GetPalette(CPalette& pal)
 {
 	pal = iPalette;
+}
+
+void CGraphicsDevice::SetGamma(float aGamma)
+{
+	// Same curve as SDL's old SDL_SetGamma()/SDL_CalculateGammaRamp(): output =
+	// 255 * (i/255)^(1/gamma), so gamma>1 brightens and gamma==1 is identity.
+	const float inv = 1.0f / (aGamma > 0.0f ? aGamma : 1.0f);
+	for (int i=0;i<sizeof(iGammaRamp);i++)
+	{
+		int v = 255.0 * pow(i/255.0, inv) + 0.5;
+		if (v<0)   v=0;
+		if (v>255) v=255;
+		iGammaRamp[i]=(Uint8)v;
+	}
+
+	SyncDisplayPalette();
+}
+
+void CGraphicsDevice::SyncDisplayPalette()
+{
+	if (!SurfaceOK()) return;
+
+	for (int i=0;i<256;i++)
+	{
+		const SDL_Color& src = iPalette.Color(i);
+		SDL_Color& dst = iDisplayPalette.Color(i);
+		dst.r = iGammaRamp[src.r];
+		dst.g = iGammaRamp[src.g];
+		dst.b = iGammaRamp[src.b];
+		dst.a = src.a;
+	}
+	SDL_SetPaletteColors(iSDLsurface->format->palette, iDisplayPalette.ColorData(), 0, 256);
 }
 
 void CGraphicsDevice::ListVideoModes()

@@ -22,9 +22,6 @@ include_directories(
 	${SDL2_IMAGE_INCLUDE_DIRS}
 	${SDL2_MIXER_INCLUDE_DIRS}
 	${SDL2_NET_INCLUDE_DIRS})
-if(APPLE)
-	add_definitions(-DDISABLE_GAMMA) # SDL_SetGamma causes segfaults occasionally
-endif()
 
 # On Windows native win32 api is used and therefore GTK+ is not needed
 if(NOT WIN32)
